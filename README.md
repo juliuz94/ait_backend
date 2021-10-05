@@ -13,7 +13,7 @@ npm install
 ```
 
 ### Step 3 
-Install MONGODB and make sure you spin up a your mongo server.
+Install MONGODB and make sure you spin up your mongo server locally.
 
 ```sh
 more info here: https://docs.mongodb.com/manual/installation/
