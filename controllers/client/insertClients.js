@@ -9,37 +9,35 @@ const insertClients = async (req, res, next) => {
 
   const allowedMimeTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'text/csv'];
 
-  const createClientsFromChuck = (chunk) => new Promise((resolve, reject) => {
+  const createClientsFromChuck = (chunk) => new Promise(async (resolve, reject) => {
     let unprocessedRows = []
-
-    chunk.forEach((row, index) => {
+    chunk.forEach(async (row, index) => {
       if (row.includes(undefined)) {
         unprocessedRows.push(row)
       }
 
       if (index !== 0 && !row.includes(undefined)) {
 
-        Client.find({ name: row[0], userCreated: body.userName }).then(client => {
-          if (!client.length) {
-            Client.create({
-              name: row[0],
-              country: row[1],
-              city: row[2],
-              category: row[3],
-              userCreated: body.userName.toLowerCase(),
-              isActive: row[4] === 'true'
-            }, () => {})
-          } else {
-            Client.findByIdAndUpdate(client._id, {
-              name: row[0],
-              country: row[1],
-              city: row[2],
-              category: row[3],
-              userCreated: body.userName.toLowerCase(),
-              isActive: row[4] === 'true'
-            }, () => {})
-          }
-        });
+        const client = await Client.findOne({ name: row[0], userCreated: body.userName })
+
+        if (!client) {
+          Client.create({
+            name: row[0],
+            country: row[1],
+            city: row[2],
+            category: row[3],
+            userCreated: body.userName.toLowerCase(),
+            isActive: row[4] === 'true'
+          }, () => { })
+        } else {
+          client.name = row[0];
+          client.country = row[1];
+          client.city = row[2];
+          client.category = row[3];
+          client.userCreated = body.userName.toLowerCase();
+          client.isActive = row[4] === 'true';
+          await client.save();
+        }
 
         resolve('Client created or updated')
       }
@@ -78,13 +76,13 @@ const insertClients = async (req, res, next) => {
               }
             });
 
-            let user = await User.find({name: body.userName})
+            let user = await User.findOne({ name: body.userName })
 
-            if (!user[0]) {
-              await User.create({name: body.userName.toLowerCase(), clientData: {countries, cities, industries}});              
+            if (!user) {
+              await User.create({ name: body.userName.toLowerCase(), clientData: { countries, cities, industries } });
             } else {
-              user = user.clientData = {countries, cities, industries};
-              user.save();
+              user.clientData = { countries, cities, industries };
+              await user.save();
             }
 
             for (i = 0, j = sheet.data.length; i < j; i += 200) {
@@ -99,7 +97,7 @@ const insertClients = async (req, res, next) => {
           setTimeout(() => {
             fs.unlink(filePath, () => { });
             res.status(200).send('Clients created and updated');
-          }, 5_000);
+          }, 1_000);
         }
 
       });
